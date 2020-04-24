@@ -1,70 +1,67 @@
-// Imports
+const request = require("supertest");
+const server = require("../api/server.js");
 
-const request = require('supertest');
-const server = require('../api/server.js');
-const db = require('../database/dbConfig');
+const Users = require("../users/user-model");
 
-// Tests start!
-
-describe('Auth Router', () => {
-
-  it('Runs the tests', () => {
-    expect(true).toBe(true);
-  })
-
-  describe('test environment', function() {
-      it('should use the testing environment', function() {
-          expect(process.env.DB_ENV).toBe('testing')
-      })
-  })
-
-  describe('POST to /api/auth/register', () => {
-    beforeEach(async () => {
-      await db('users').truncate();
-    })
-
-    it('Returns status code 201', () => {
+describe("\n * Auth-router", function() {
+  // test the POST for register
+  describe("\n * POST /register", function() {
+    it("should return new user with text/html", function() {
       return request(server)
-        .post('/api/auth/register')
-        .send({ username: 'George', password: 'TheGoat' })
+        .post("/api/auth/register")
         .then(res => {
-          expect(res.status).toBe(201);
-        })
-    })
-  })
+          expect(res.type).toMatch("text/html");
+        });
+    });
+  });
 
-  describe('POST to /api/auth/register', () => {
-    it('Returns length of one', async () => {
-      const users = await db('users');
-
-      await request(server)
-        .post('/api/auth/register')
-        .send({ username: 'George', password: 'TheGoat' })
-        .then(res => {
-          expect(users).toHaveLength(1)
-        })
-    })
-  })
-
-  describe('POST to /api/auth/login', () => {
-    it('Returns a status code 200', () => {
+  describe("\n * POST /register err", function() {
+    it("should not return JSON", function() {
       return request(server)
-        .post('/api/auth/login')
-        .send({ username: 'George', password: 'TheGoat' })
+        .post("/api/auth/register")
         .then(res => {
-          expect(res.status).toBe(200);
-        })
-    })
-  })
+          expect(res.type).not.toMatch(/json/i);
+       
+        });
+    });
+  });
+    
+//     it("should return username registered", function() {
+//       return Users.add({ username: "george3", password: "george3" }).then(
+//         res => {
+//           expect(res.username && res.password).toBe("george3");
+//         }
+//       );
+//     });
+//   });
 
-  describe('POST to /api/auth/login', () => {
-    it('Returns an object', () => {
+  // test the POST for login
+  describe("\n * POST /login", function() {
+    it("should return JSON", function() {
       return request(server)
-        .post('/api/auth/login')
-        .send({ username: 'George', password: 'TheGoat' })
+        .post("/api/auth/login")
         .then(res => {
           expect(res.type).toMatch(/json/i);
-        })
-    })
-  })
-})
+        });
+    });
+  });
+
+  describe("\n * POST /login err", function() {
+    it("should not match text/html", function() {
+      return request(server)
+        .post("/api/auth/login")
+        .then(res => {
+          expect(res.type).not.toMatch("text/html");
+         
+        });
+    });
+  });
+    // To test, change the users id and match the username
+    it("should return user that is registered", function() {
+      return Users.findById(4).then(res => {
+        expect(res.username).toBe("george3");
+      });
+    });
+  });
+
+

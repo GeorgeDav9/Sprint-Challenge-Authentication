@@ -1,66 +1,62 @@
-// Imports
+  
+const router = require("express").Router();
+const bcrypt = require("bcryptjs");
+const jwt = require("jsonwebtoken");
 
-const router = require('express').Router();
-const bcrypt = require('bcryptjs');
-const jwt = require('jsonwebtoken');
-// Secret
+const secrets = require("../config/secrets");
 
-const { jwtSecret } = require('../config/secrets.js');
-// Model
+const Users = require("../users/user-model");
 
-const Users = require('../users/users-model');
-
-// CRUD
-
-router.post('/register', (req, res) => {
-  let user = req.body;
-
-  const hash = bcrypt.hashSync(user.password, 8);
-
+router.post("/register", (req, res) => {
+  // implement registration
+  const user = req.body;
+  const hash = bcrypt.hashSync(user.password, 8); // hash a password when registering
   user.password = hash;
 
   Users.add(user)
-    .then(saved => {
-      res.status(201).json(saved);
+    .then(newUser => {
+      res.status(201).json(newUser);
     })
     .catch(err => {
-      console.log(err)
-      res.status(500).json(err);
+      res.status(500).json({ error: "You have an error", err });
     });
 });
 
-router.post('/login', (req, res) => {
-  let { username, password } = req.body;
+router.post("/login", (req, res) => {
+  // implement login
+  const { username, password } = req.body;
 
   Users.findBy({ username })
     .first()
     .then(user => {
-      if(user && bcrypt.compareSync(password, user.password)) {
-        const token = signToken(user)
-
-        console.log(user)
-        res.status(200).json({ token });
-      } else { 
-        res.status(401).json({ error: "Invalid Credentials" });
+      if (user && bcrypt.compareSync(password, user.password)) {
+        const token = signToken(user);
+        res.status(200).json({
+          message: `Welcome ${user.username
+            .charAt(0)
+            .toUpperCase()}, here is your token: ${token}`,
+          user_id: `${user.id}`
+        });
+      } else {
+        res.status(401).json({ you: "shall not pass" });
       }
     })
     .catch(err => {
-      console.log(err)
-      res.status(500).json(err)
-    })
+      res.status(500).json({ error: "Could not login", err });
+    });
 });
 
 function signToken(user) {
   const payload = {
     userId: user.id,
-    username: user.name
+    username: user.username
   };
 
   const options = {
-    expiresIn: "5d"
+    expiresIn: "1d"
   };
 
-  return jwt.sign(payload, jwtSecret, options)
-};
+  return jwt.sign(payload, secrets.jwtSecret, options);
+}
 
 module.exports = router;
